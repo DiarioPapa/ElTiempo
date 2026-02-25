@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Noticias para Papá</title>
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background-color: white;
+  margin: 0;
+  padding: 20px;
+  text-align: center;
+}
+
+h1 {
+  font-size: 52px;
+  font-weight: 900;
+  margin-bottom: 40px;
+  color: black;
+}
+
+button {
+  font-size: 44px;
+  font-weight: 900;
+  color: black !important;
+  padding: 35px;
+  margin: 25px 0;
+  width: 100%;
+  border-radius: 25px;
+  border: 4px solid black;
+  background-color: white;
+  line-height: 1.2;
+  appearance: none;
+  -webkit-appearance: none;
+  transition: background-color 0.2s ease;
+}
+
+button.confirmar {
+  background-color: #d9d9d9;
+}
+
+.volver {
+  font-size: 28px;
+  background-color: #eeeeee;
+  border: 3px solid black;
+  margin-top: 40px;
+}
+</style>
+</head>
+<body>
+
+<div id="inicio">
+<h1>EL TIEMPO</h1>
+<div id="botonesSecciones"></div>
+</div>
+
+<div id="seccion" style="display:none;">
+<h1 id="tituloSeccion"></h1>
+<div id="listaNoticias"></div>
+<button class="volver" onclick="volverInicio()">⬅ VOLVER</button>
+</div>
+
+<script>
+
+// =============================
+// EDITAS AQUÍ CADA DÍA
+// =============================
+
+const noticias = {
+
+  portada: [
+    {
+      titulo: "Ejemplo Portada",
+      texto: "Aquí debes pegar el texto completo."
+    }
+  ],
+
+  politica: [
+    {
+      titulo: "Ejemplo Política",
+      texto: "Texto completo."
+    }
+  ],
+
+  opinion: [
+    {
+      titulo: "Ejemplo Opinión",
+      texto: "Texto completo."
+    }
+  ]
+
+};
+
+// =============================
+// NO MODIFICAR DESDE AQUÍ
+// =============================
+
+let seccionActual = "";
+let vozSeleccionada = null;
+let ultimoBoton = null;
+
+function seleccionarMejorVoz() {
+  const voces = speechSynthesis.getVoices();
+  vozSeleccionada =
+    voces.find(v => v.lang === "es-CO") ||
+    voces.find(v => v.lang.startsWith("es")) ||
+    voces[0];
+}
+
+window.speechSynthesis.onvoiceschanged = seleccionarMejorVoz;
+
+function hablar(texto, esNoticiaCompleta = false) {
+  speechSynthesis.cancel();
+
+  const mensaje = new SpeechSynthesisUtterance(texto);
+  mensaje.voice = vozSeleccionada;
+  mensaje.lang = "es-CO";
+  mensaje.rate = 0.9;
+
+  if (esNoticiaCompleta) {
+    mensaje.onend = function() {
+      const aviso = new SpeechSynthesisUtterance(
+        "Si desea escuchar otra noticia, toque volver."
+      );
+      aviso.voice = vozSeleccionada;
+      aviso.lang = "es-CO";
+      aviso.rate = 0.9;
+      speechSynthesis.speak(aviso);
+    };
+  }
+
+  speechSynthesis.speak(mensaje);
+}
+
+function limpiarConfirmaciones() {
+  document.querySelectorAll("button").forEach(b => {
+    b.classList.remove("confirmar");
+  });
+}
+
+function cargarSecciones() {
+  const contenedor = document.getElementById("botonesSecciones");
+  contenedor.innerHTML = "";
+
+  Object.keys(noticias).forEach(seccion => {
+    const btn = document.createElement("button");
+    btn.innerText = seccion.toUpperCase();
+
+    btn.onclick = function() {
+
+      if (ultimoBoton === btn) {
+        limpiarConfirmaciones();
+        ultimoBoton = null;
+        mostrarSeccion(seccion);
+      } else {
+        limpiarConfirmaciones();
+        btn.classList.add("confirmar");
+        hablar(seccion);
+        ultimoBoton = btn;
+      }
+    };
+
+    contenedor.appendChild(btn);
+  });
+}
+
+function mostrarSeccion(seccion) {
+  seccionActual = seccion;
+
+  document.getElementById("inicio").style.display = "none";
+  document.getElementById("seccion").style.display = "block";
+  document.getElementById("tituloSeccion").innerText = seccion.toUpperCase();
+
+  const lista = document.getElementById("listaNoticias");
+  lista.innerHTML = "";
+
+  noticias[seccion].forEach((n) => {
+
+    const btn = document.createElement("button");
+    btn.innerText = n.titulo;
+
+    btn.onclick = function() {
+
+      if (ultimoBoton === btn) {
+        limpiarConfirmaciones();
+        ultimoBoton = null;
+        hablar(n.texto, true);
+      } else {
+        limpiarConfirmaciones();
+        btn.classList.add("confirmar");
+        hablar(n.titulo);
+        ultimoBoton = btn;
+      }
+    };
+
+    lista.appendChild(btn);
+  });
+}
+
+function volverInicio() {
+  speechSynthesis.cancel();
+  limpiarConfirmaciones();
+  ultimoBoton = null;
+  document.getElementById("seccion").style.display = "none";
+  document.getElementById("inicio").style.display = "block";
+}
+
+cargarSecciones();
+
+</script>
+
+</body>
+</html>
